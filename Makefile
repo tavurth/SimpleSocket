@@ -75,7 +75,7 @@ library: $(OBJECTS)
 	@echo
 	@echo Compile $(LIB) into your application by using
 	@echo
-	@echo "	g++ example.cpp $(EXTERNL) $(LIB_FILE) -o example"
+	@echo "	g++ example.cpp $(EXTERNL) $(LIB_FILE) -o example" $(EXTERNAL) comes from your curl library.
 	@echo
 	@echo
 	@echo Dont forget to:
