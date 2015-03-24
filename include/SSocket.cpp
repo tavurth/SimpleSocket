@@ -27,12 +27,26 @@ size_t SSocket::WRITE_CALLBACK(void *contents, size_t size, size_t nmemb, void *
 
 SSocket::SSocket() {
 //Construcrtor
-  this->curl = NULL;
+  //Initialize our error code
   this->res  = (CURLcode) 0;
+  
+  //Setup our socket if first time
+  this->curl = curl_easy_init();
+  
+  //Maximum wait before timeout
+  this->option(CURLOPT_TIMEOUT, 10);
+  this->option(CURLOPT_WRITEDATA, &SSocket::READ_BUFFER);
+  this->option(CURLOPT_WRITEFUNCTION, SSocket::WRITE_CALLBACK);
 }
 
 SSocket::~SSocket() {
 //Destructor
+  if (this->curl != NULL)
+    curl_easy_cleanup(this->curl);
+}
+
+CURL * SSocket::handle() {
+  return this->curl;
 }
 
 ////
@@ -63,6 +77,10 @@ bool SSocket::option(CURLoption option, std::string * param) {
 }
 bool SSocket::option(CURLoption option, size_t (*param)(void *, size_t, size_t, void *)) {
   return this->check(curl_easy_setopt(this->curl, option, param));
+}
+
+void SSocket::debug(bool param) {
+  this->option(CURLOPT_VERBOSE, (param ? 1L : 0L));
 }
 
 ////
@@ -97,14 +115,6 @@ std::string SSocket::http_build_query(std::string url, std::map<std::string, std
 
 void SSocket::configure(std::string url) {
 //Return or initialize this socket object
-  if (this->curl == NULL) {
-    //Setup our socket if first time
-    this->curl = curl_easy_init();
-    //Maximum wait before timeout
-    this->option(CURLOPT_TIMEOUT, 10);
-    this->option(CURLOPT_WRITEDATA, &SSocket::READ_BUFFER);
-    this->option(CURLOPT_WRITEFUNCTION, SSocket::WRITE_CALLBACK);
-  }
   this->option(CURLOPT_URL, url.c_str());
 }
 

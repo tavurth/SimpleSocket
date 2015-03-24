@@ -43,6 +43,7 @@ public:
   SSocket();
   ~SSocket();
 
+  CURL * handle();
   bool check(CURLcode);
   const char* error();
   
@@ -50,6 +51,8 @@ public:
   bool option(CURLoption, const char *);
   bool option(CURLoption, std::string *);
   bool option(CURLoption, size_t (*)(void *, size_t, size_t, void *));
+
+  void debug(bool);
   
   void auth(int);
   void auth_peer(int);

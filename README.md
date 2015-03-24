@@ -10,4 +10,4 @@ Basic C++ curl wrapper, emphasizing simplicity for basic GET POST PATCH DELETE o
     When running the test application, you will need to copy libcurl.dll into the application folder.
     
     Use "make" to compile an example application
-    Use "make library" to compile a static library
+    Use "make lib" to compile a static library
