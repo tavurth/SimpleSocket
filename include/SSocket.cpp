@@ -129,8 +129,8 @@ std::string SSocket::execute() {
     return "Curl initialization failure";
 
   //Perform and check for errors
-  if ((this->res = curl_easy_perform(this->curl)) != CURLE_OK)
-    SSocket::READ_BUFFER = curl_easy_strerror(this->res);
+  if (! this->check(curl_easy_perform(this->curl)))
+    return this->error();
 
   //Return the buffer
   return SSocket::READ_BUFFER;
@@ -162,7 +162,7 @@ void SSocket::auth_host(int value) {
 
 std::string SSocket::get(std::string url, std::string queryData) {
 //Perform a Simple get request
-  this->configure(url + "?" + queryData);
+  this->configure(url + (queryData.length() > 0 ? "?" + queryData : ""));
 	
   if (this->curl) {
     //get request setup

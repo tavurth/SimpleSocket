@@ -75,8 +75,9 @@ lib: $(OBJECTS)
 	@echo
 	@echo Compile $(LIB) into your application by using
 	@echo
-	@echo "	g++ example.cpp $(EXTERNL) $(LIB_FILE) -o example" $(EXTERNAL)
+	@echo "	g++ $(EXTERNL) example.cpp -o example.exe -L../SimpleSocket/lib/ -lssocket"
 	@echo
+	@echo where '../SimpleSocket/lib' is the address of the lib directory
 	@echo
 	@echo Dont forget to:
 	@echo

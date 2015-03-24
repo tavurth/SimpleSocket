@@ -11,3 +11,7 @@ Basic C++ curl wrapper, emphasizing simplicity for basic GET POST PATCH DELETE o
     
     Use "make" to compile an example application
     Use "make lib" to compile a static library
+
+    When using the library, compile into your application as follows: (G++)
+
+    g++ example.cpp -o test -L../SimpleSocket/lib/ -lssocket
