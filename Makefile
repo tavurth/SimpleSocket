@@ -21,7 +21,7 @@ NICE_NAME   =   SimpleSocket
 LIB_TYPE    = 	.dll
 
 ##	Location of source and build directories
-SRC_DIR		=   source
+SRC_DIR		=   include
 BIN_DIR		=   build
 LIB_DIR		=   lib
 
@@ -47,7 +47,7 @@ $(TARGET): $(OBJECTS)
 	@echo Linking object files.
 	@echo ======================
 	@echo
-	$(CXX) $(EXTERNL) $(OBJECTS) $(LDFLAGS) -o $@
+	$(CXX) source/*.cpp $(EXTERNL) $(OBJECTS) $(LDFLAGS) -o $@
 	@echo
 	@echo ======================
 	@echo Compilation completed.
@@ -57,7 +57,7 @@ $(TARGET): $(OBJECTS)
 	./$(TARGET)
 
 ##	Compile the objects into the library
-library: $(OBJECTS)
+lib: $(OBJECTS)
 	@echo
 	@echo ======================
 	@echo Linking object files.
@@ -75,7 +75,7 @@ library: $(OBJECTS)
 	@echo
 	@echo Compile $(LIB) into your application by using
 	@echo
-	@echo "	g++ example.cpp $(EXTERNL) $(LIB_FILE) -o example" $(EXTERNAL) comes from your curl library.
+	@echo "	g++ example.cpp $(EXTERNL) $(LIB_FILE) -o example" $(EXTERNAL)
 	@echo
 	@echo
 	@echo Dont forget to:

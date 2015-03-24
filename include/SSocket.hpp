@@ -42,7 +42,19 @@ protected:
 public:
   SSocket();
   ~SSocket();
-    
+
+  bool check(CURLcode);
+  const char* error();
+  
+  bool option(CURLoption, long);
+  bool option(CURLoption, const char *);
+  bool option(CURLoption, std::string *);
+  bool option(CURLoption, size_t (*)(void *, size_t, size_t, void *));
+  
+  void auth(int);
+  void auth_peer(int);
+  void auth_host(int);
+
   std::string del(const std::string);
   std::string get(const std::string, const std::string = "");
   std::string post(const std::string, const std::string = "", std::string = "");

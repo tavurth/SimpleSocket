@@ -35,6 +35,41 @@ SSocket::~SSocket() {
 //Destructor
 }
 
+////
+//
+// Error reporting and debugging
+//
+
+bool SSocket::check(CURLcode res) {
+  return ((this->res = res) == CURLE_OK) ? true : false;
+}
+const char * SSocket::error() {
+  return curl_easy_strerror(this->res);
+}
+
+////
+//
+// Curl internal option setup
+//
+
+bool SSocket::option(CURLoption option, long param) {
+  return this->check(curl_easy_setopt(this->curl, option, param));
+}
+bool SSocket::option(CURLoption option, const char * param) {
+  return this->check(curl_easy_setopt(this->curl, option, param));
+}
+bool SSocket::option(CURLoption option, std::string * param) {
+  return this->check(curl_easy_setopt(this->curl, option, param));
+}
+bool SSocket::option(CURLoption option, size_t (*param)(void *, size_t, size_t, void *)) {
+  return this->check(curl_easy_setopt(this->curl, option, param));
+}
+
+////
+//
+// Helper function for building HTTP queries
+//
+
 std::string SSocket::http_build_query(std::map<std::string, std::string> queryData) {
 //Return a query for url get arguments to a server based php script
 
@@ -55,17 +90,22 @@ std::string SSocket::http_build_query(std::string url, std::map<std::string, std
   return url + this->http_build_query(queryData);
 }
 
+////
+//
+// Generic functionality
+//
+
 void SSocket::configure(std::string url) {
 //Return or initialize this socket object
   if (this->curl == NULL) {
     //Setup our socket if first time
     this->curl = curl_easy_init();
     //Maximum wait before timeout
-    curl_easy_setopt(this->curl, CURLOPT_TIMEOUT, 10);
-    curl_easy_setopt(this->curl, CURLOPT_WRITEDATA, &SSocket::READ_BUFFER);
-    curl_easy_setopt(this->curl, CURLOPT_WRITEFUNCTION, SSocket::WRITE_CALLBACK);
+    this->option(CURLOPT_TIMEOUT, 10);
+    this->option(CURLOPT_WRITEDATA, &SSocket::READ_BUFFER);
+    this->option(CURLOPT_WRITEFUNCTION, SSocket::WRITE_CALLBACK);
   }
-  curl_easy_setopt(this->curl, CURLOPT_URL, url.c_str());
+  this->option(CURLOPT_URL, url.c_str());
 }
 
 std::string SSocket::execute() {
@@ -86,14 +126,38 @@ std::string SSocket::execute() {
   return SSocket::READ_BUFFER;
 }
 
+////
+//
+// Authentication of Host and Client
+//
+
+void SSocket::auth(int value) {
+  //Tell our socket to verify both the host and peer
+  this->auth_peer(value);
+  this->auth_host(value);
+}
+void SSocket::auth_peer(int value) {
+  //Tell our socket to verify the client or not
+  curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, value);
+}
+void SSocket::auth_host(int value) {
+  //Tell our socket to verify the host or not
+  curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, value);
+}
+
+////
+//
+// Request types
+//
+
 std::string SSocket::get(std::string url, std::string queryData) {
 //Perform a Simple get request
   this->configure(url + "?" + queryData);
 	
   if (this->curl) {
     //get request setup
-    curl_easy_setopt(this->curl, CURLOPT_HTTPGET, 1);
-    curl_easy_setopt(this->curl, CURLOPT_CUSTOMREQUEST, "GET");
+    this->option(CURLOPT_HTTPGET, 1);
+    this->option(CURLOPT_CUSTOMREQUEST, "GET");
   }
   
   return this->execute();
@@ -109,12 +173,12 @@ std::string SSocket::post(std::string url, std::string postData, std::string bod
   this->configure(url); 
   if (this->curl) {
     //Tell curl we want to post
-    curl_easy_setopt(this->curl, CURLOPT_POST, 1);				
-    curl_easy_setopt(this->curl, CURLOPT_CUSTOMREQUEST, "POST");	  
+    this->option(CURLOPT_POST, 1);				
+    this->option(CURLOPT_CUSTOMREQUEST, "POST");	  
     //Concatenate body and post data
     bodyData = postData + (bodyData.empty() ? "" : "&body=" + bodyData);
-    curl_easy_setopt(this->curl, CURLOPT_POSTFIELDSIZE, bodyData.length());
-    curl_easy_setopt(this->curl, CURLOPT_POSTFIELDS, bodyData.c_str());
+    this->option(CURLOPT_POSTFIELDSIZE, bodyData.length());
+    this->option(CURLOPT_POSTFIELDS, bodyData.c_str());
   }
   return this->execute();
 }
@@ -131,13 +195,13 @@ std::string SSocket::patch(std::string url, std::string postData, std::string bo
   
   if (this->curl) {
     //Tell curl we want to post
-    curl_easy_setopt(this->curl, CURLOPT_POST, 1);
+    this->option(CURLOPT_POST, 1);
     //patch request setup
-    curl_easy_setopt(this->curl, CURLOPT_CUSTOMREQUEST, "PATCH");
+    this->option(CURLOPT_CUSTOMREQUEST, "PATCH");
     //Concatenate body and post data
     bodyData = postData + (bodyData.empty() ? "" : "&body=" + bodyData);
-    curl_easy_setopt(this->curl, CURLOPT_POSTFIELDSIZE, bodyData.length());
-    curl_easy_setopt(this->curl, CURLOPT_POSTFIELDS, bodyData.c_str());
+    this->option(CURLOPT_POSTFIELDSIZE, bodyData.length());
+    this->option(CURLOPT_POSTFIELDS, bodyData.c_str());
   }
   return this->execute();
 }
@@ -154,7 +218,7 @@ std::string SSocket::del(std::string url) {
 
   if (this->curl)
     //DELETE request setup
-    curl_easy_setopt(this->curl, CURLOPT_CUSTOMREQUEST, "DELETE");
+    this->option(CURLOPT_CUSTOMREQUEST, "DELETE");
 	
   return this->execute();
 }
