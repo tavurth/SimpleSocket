@@ -30,14 +30,22 @@ protected:
 
   CURL *	  curl;
   CURLcode 	  res;
+  typedef bool (*Callback)(const char *);
 
   std::string execute();
   void configure(const std::string);
+
+  // Map to string
+  std::string build_query(const std::map<std::string, std::string>);
+
+  // Map to HTTP query string
   std::string http_build_query(const std::map<std::string, std::string>);
   std::string http_build_query(const std::string, const std::map<std::string, std::string>);
 
   static std::string READ_BUFFER;
+  static Callback    STREAM_FUNC;
   static size_t WRITE_CALLBACK(void *, size_t, size_t, void *);
+  static size_t STREAM_CALLBACK(void *, size_t, size_t, void *);
   
 public:
   SSocket();
@@ -66,6 +74,8 @@ public:
   std::string get(const std::string, const std::map<std::string, std::string>);
   std::string post(const std::string, const std::map<std::string, std::string>, std::string = "");
   std::string patch(const std::string, const std::map<std::string, std::string>, std::string = "");
+
+  void stream(std::string, Callback);
 };
 
 #endif

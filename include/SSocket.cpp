@@ -18,11 +18,18 @@
 #include "SSocket.hpp"
 
 std::string SSocket::READ_BUFFER = "";
+SSocket::Callback SSocket::STREAM_FUNC = 0;
 
 size_t SSocket::WRITE_CALLBACK(void *contents, size_t size, size_t nmemb, void *userp) {
   //Callback function used for writing data from the web directly into a string
-  ((std::string*) userp)->append((char*)contents, size * nmemb);
+  ((std::string*) userp)->append((char *)contents, size * nmemb);
   return size * nmemb;
+}
+size_t SSocket::STREAM_CALLBACK(void *contents, size_t size, size_t nmemb, void *userp) {
+  //Callback function used for streaming callback
+
+  //Return true from user function to exit stream prematurely
+  return ((SSocket::STREAM_FUNC)((char *)contents)) ? 0 : size * nmemb;
 }
 
 SSocket::SSocket() {
@@ -88,24 +95,34 @@ void SSocket::debug(bool param) {
 // Helper function for building HTTP queries
 //
 
-std::string SSocket::http_build_query(std::map<std::string, std::string> queryData) {
-//Return a query for url get arguments to a server based php script
-
-  //Reuse our static string buffer
+std::string SSocket::build_query(const std::map<std::string, std::string> query) {
+   //Reuse our static string buffer
   SSocket::READ_BUFFER = "";
 
   //Loop through the hash and add the keys to the buffer
-  for (const auto &it : queryData)
+  for (const auto &it : query)
     SSocket::READ_BUFFER += it.first + "=" + it.second + "&";
 
-  //Return the buffer (Minus trailing &)
-  return SSocket::READ_BUFFER.substr(0, SSocket::READ_BUFFER.size()-1);
+  // Remove the trailing "&"
+  SSocket::READ_BUFFER.pop_back();
+  
+  return SSocket::READ_BUFFER;
+}
+std::string SSocket::http_build_query(const std::map<std::string, std::string> query) {
+//Return a query for url get arguments to a server based php script
+
+  //Use the specified options to save the query as a string
+  //Ignore return value to reuse SSocket::READ_BUFFER
+  this->build_query(query);
+    
+  //Return the buffer
+  return (query.empty() ? "" : "?") + SSocket::READ_BUFFER;
 }
 
-std::string SSocket::http_build_query(std::string url, std::map<std::string, std::string> queryData) {
+std::string SSocket::http_build_query(const std::string url, const std::map<std::string, std::string> query) {
 //Return a query for passing url get arguments to a server based php script
   //Call internal query func and return concat
-  return url + this->http_build_query(queryData);
+  return url + this->http_build_query(query);
 }
 
 ////
@@ -231,4 +248,23 @@ std::string SSocket::del(std::string url) {
     this->option(CURLOPT_CUSTOMREQUEST, "DELETE");
 	
   return this->execute();
+}
+
+void SSocket::stream(std::string url, SSocket::Callback callback) {
+  //Open a new curl stream to url, and call (*callback) for each data package
+
+  //Url setup
+  this->configure(url);
+
+  //Save our callback function
+  SSocket::STREAM_FUNC = callback;
+
+  //Setup our streaming callback, which will in turn call (*callback)
+  this->option(CURLOPT_WRITEFUNCTION, SSocket::STREAM_CALLBACK);
+
+  //Start the stream, return true from (*callback) to exit
+  this->execute();
+
+  //Reset our curl callback to the write buffer 
+  this->option(CURLOPT_WRITEFUNCTION, SSocket::WRITE_CALLBACK);
 }
