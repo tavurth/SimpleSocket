@@ -30,7 +30,7 @@ protected:
 
   CURL *	  curl;
   CURLcode 	  res;
-  typedef bool (*Callback)(const char *);
+  typedef bool (*Callback)(const void *);
 
   std::string execute();
   void configure(const std::string);
