@@ -29,7 +29,7 @@ size_t SSocket::STREAM_CALLBACK(void *contents, size_t size, size_t nmemb, void 
   //Callback function used for streaming callback
 
   //Return true from user function to exit stream prematurely
-  return ((SSocket::STREAM_FUNC)((char *)contents)) ? 0 : size * nmemb;
+  return ((SSocket::STREAM_FUNC)(contents)) ? 0 : size * nmemb;
 }
 
 SSocket::SSocket() {
