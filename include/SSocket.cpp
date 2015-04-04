@@ -29,9 +29,8 @@ size_t SSocket::STREAM_CALLBACK(void *contents, size_t size, size_t nmemb, void 
   //Callback function used for streaming callback
 
   //Return true from user function to exit stream prematurely
-  return ((SSocket::STREAM_FUNC)(contents)) ? 0 : size * nmemb;
+  return ((SSocket::STREAM_FUNC)(contents, size, nmemb)) ? 0 : size * nmemb;
 }
-
 SSocket::SSocket() {
 //Construcrtor
   //Initialize our error code
@@ -74,6 +73,9 @@ const char * SSocket::error() {
 //
 
 bool SSocket::option(CURLoption option, long param) {
+  return this->check(curl_easy_setopt(this->curl, option, param));
+}
+bool SSocket::option(CURLoption option, void * param) {
   return this->check(curl_easy_setopt(this->curl, option, param));
 }
 bool SSocket::option(CURLoption option, const char * param) {
@@ -177,7 +179,8 @@ void SSocket::auth_host(int value) {
 // Request types
 //
 
-std::string SSocket::get(std::string url, std::string queryData) {
+std::string SSocket::get(const std::string & url,
+                         const std::string & queryData) {
 //Perform a Simple get request
   this->configure(url + (queryData.length() > 0 ? "?" + queryData : ""));
 	
@@ -190,12 +193,14 @@ std::string SSocket::get(std::string url, std::string queryData) {
   return this->execute();
 }		
 
-std::string SSocket::get(std::string url, std::map<std::string, std::string> queryData) {
+std::string SSocket::get(const std::string & url,
+                         const std::map<std::string, std::string> & queryData) {
 //Send a get request, using a std::map (Hashed vector) for the query data
   return this->get(url, this->http_build_query(queryData));
 }
 
-std::string SSocket::post(std::string url, std::string postData, std::string bodyData) {
+std::string SSocket::post(const std::string & url,
+                          const std::string & postData) {
 //Send a post request using a simple std::string for the data 
   this->configure(url); 
   if (this->curl) {
@@ -203,19 +208,20 @@ std::string SSocket::post(std::string url, std::string postData, std::string bod
     this->option(CURLOPT_POST, 1);				
     this->option(CURLOPT_CUSTOMREQUEST, "POST");	  
     //Concatenate body and post data
-    bodyData = postData + (bodyData.empty() ? "" : "&body=" + bodyData);
-    this->option(CURLOPT_POSTFIELDSIZE, bodyData.length());
-    this->option(CURLOPT_POSTFIELDS, bodyData.c_str());
+    this->option(CURLOPT_POSTFIELDSIZE, postData.length());
+    this->option(CURLOPT_POSTFIELDS, postData.c_str());
   }
   return this->execute();
 }
 
-std::string SSocket::post(std::string url, std::map<std::string, std::string> queryData, std::string bodyData) {
+std::string SSocket::post(const std::string & url,
+                          const std::map<std::string, std::string> & queryData) {
 //Send a post request using a std::map (Hashed vector) for the input 
-  return this->post(url, this->http_build_query(queryData), bodyData);
+  return this->post(url, this->http_build_query(queryData));
 }
 
-std::string SSocket::patch(std::string url, std::string postData, std::string bodyData) {
+std::string SSocket::patch(const std::string & url,
+                           const std::string & postData) {
 //Send a patch request using a simple std::string for the data
   //Send a patch request 	
   this->configure(url);
@@ -226,19 +232,19 @@ std::string SSocket::patch(std::string url, std::string postData, std::string bo
     //patch request setup
     this->option(CURLOPT_CUSTOMREQUEST, "PATCH");
     //Concatenate body and post data
-    bodyData = postData + (bodyData.empty() ? "" : "&body=" + bodyData);
-    this->option(CURLOPT_POSTFIELDSIZE, bodyData.length());
-    this->option(CURLOPT_POSTFIELDS, bodyData.c_str());
+    this->option(CURLOPT_POSTFIELDSIZE, postData.length());
+    this->option(CURLOPT_POSTFIELDS, postData.c_str());
   }
   return this->execute();
 }
 
-std::string SSocket::patch(std::string url, std::map<std::string, std::string> queryData, std::string bodyData) {
+std::string SSocket::patch(const std::string & url,
+                           const std::map<std::string, std::string> & queryData) {
 //Send a post request using a std::map (Hashed vector) for the input 
-  return this->patch(url, this->http_build_query(queryData), bodyData);
+  return this->patch(url, this->http_build_query(queryData));
 }
 
-std::string SSocket::del(std::string url) {
+std::string SSocket::del(const std::string & url) {
 //Send a simple Delete request, using only a URL
   //Send a DELETE request 
   this->configure(url);
@@ -249,22 +255,38 @@ std::string SSocket::del(std::string url) {
 	
   return this->execute();
 }
-
-void SSocket::stream(std::string url, SSocket::Callback callback) {
-  //Open a new curl stream to url, and call (*callback) for each data package
+void SSocket::stream(const std::string & url) {
 
   //Url setup
   this->configure(url);
-
-  //Save our callback function
-  SSocket::STREAM_FUNC = callback;
+  //Start the stream, return true from (*callback) to exit
+  this->execute();
+}
+void SSocket::stream(const std::string & url, SSocket::Callback callback) {
+  //Open a new curl stream to url, and call (*callback) for each data package
 
   //Setup our streaming callback, which will in turn call (*callback)
   this->option(CURLOPT_WRITEFUNCTION, SSocket::STREAM_CALLBACK);
 
-  //Start the stream, return true from (*callback) to exit
-  this->execute();
+  //Save our callback function
+  SSocket::STREAM_FUNC = callback;
 
-  //Reset our curl callback to the write buffer 
+  //Launch the stream
+  this->stream(url);
+
+  //Reset our curl callback to the write buffer
   this->option(CURLOPT_WRITEFUNCTION, SSocket::WRITE_CALLBACK);
+
+}
+void SSocket::buffer(const std::string & url, std::string & buffer) {
+//Setup our streaming callback, which will in turn call (*callback)
+  //Set our curl callback to the write buffer
+  this->option(CURLOPT_WRITEDATA, &buffer);
+  this->option(CURLOPT_WRITEFUNCTION, SSocket::WRITE_CALLBACK);
+  
+  //Launch the stream
+  this->stream(url);
+
+  //Reset our curl callback to the write buffer
+  this->option(CURLOPT_WRITEDATA, &SSocket::READ_BUFFER);
 }

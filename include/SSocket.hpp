@@ -26,15 +26,49 @@
 //SSocket offers a user friendly wrapper for Curl
 
 class SSocket {
-protected:
+  
+public:
+  // Type of streaming callback function 
+  typedef bool (*Callback)(const void *, const unsigned, const unsigned);
 
+  SSocket();
+  ~SSocket();
+
+  CURL * handle();
+  bool check(CURLcode);
+  const char* error();
+  
+  bool option(CURLoption, long);
+  bool option(CURLoption, void *);
+  bool option(CURLoption, const char *);
+  bool option(CURLoption, std::string *);
+  bool option(CURLoption, size_t (*)(void *, size_t, size_t, void *));
+
+  void debug(bool);
+  
+  void auth(int);
+  void auth_peer(int);
+  void auth_host(int);
+
+  std::string del(const std::string &);
+  std::string get(const std::string &, const std::string & = "");
+  std::string post(const std::string &, const std::string & = "");
+  std::string patch(const std::string &, const std::string & = "");
+
+  std::string get(const std::string &, const std::map<std::string, std::string> &);
+  std::string post(const std::string &, const std::map<std::string, std::string> &);
+  std::string patch(const std::string &, const std::map<std::string, std::string> &);
+
+  void stream(const std::string &, Callback);
+  void buffer(const std::string &, std::string &);
+  
+protected:
   CURL *	  curl;
   CURLcode 	  res;
-  typedef bool (*Callback)(const void *);
 
   std::string execute();
   void configure(const std::string);
-
+  void stream(const std::string &);
   // Map to string
   std::string build_query(const std::map<std::string, std::string>);
 
@@ -46,36 +80,6 @@ protected:
   static Callback    STREAM_FUNC;
   static size_t WRITE_CALLBACK(void *, size_t, size_t, void *);
   static size_t STREAM_CALLBACK(void *, size_t, size_t, void *);
-  
-public:
-  SSocket();
-  ~SSocket();
-
-  CURL * handle();
-  bool check(CURLcode);
-  const char* error();
-  
-  bool option(CURLoption, long);
-  bool option(CURLoption, const char *);
-  bool option(CURLoption, std::string *);
-  bool option(CURLoption, size_t (*)(void *, size_t, size_t, void *));
-
-  void debug(bool);
-  
-  void auth(int);
-  void auth_peer(int);
-  void auth_host(int);
-
-  std::string del(const std::string);
-  std::string get(const std::string, const std::string = "");
-  std::string post(const std::string, const std::string = "", std::string = "");
-  std::string patch(const std::string, const std::string = "", std::string = "");
-
-  std::string get(const std::string, const std::map<std::string, std::string>);
-  std::string post(const std::string, const std::map<std::string, std::string>, std::string = "");
-  std::string patch(const std::string, const std::map<std::string, std::string>, std::string = "");
-
-  void stream(std::string, Callback);
 };
 
 #endif
