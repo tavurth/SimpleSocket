@@ -21,6 +21,7 @@
 
 #include <map>
 #include <string>
+#include <fstream>
 #include <curl/curl.h>
 
 //SSocket offers a user friendly wrapper for Curl
@@ -45,6 +46,7 @@ public:
   bool option(CURLoption, size_t (*)(void *, size_t, size_t, void *));
 
   void debug(bool);
+  void timeout(long);
   
   void auth(int);
   void auth_peer(int);
@@ -60,7 +62,8 @@ public:
   std::string patch(const std::string &, const std::map<std::string, std::string> &);
 
   void stream(const std::string &, Callback);
-  void buffer(const std::string &, std::string &);
+  void stream(const std::string &, std::string &);
+  void stream(const std::string &, const char *, bool = false);
   
 protected:
   CURL *	  curl;
@@ -78,6 +81,7 @@ protected:
 
   static std::string READ_BUFFER;
   static Callback    STREAM_FUNC;
+  static size_t FPUT_CALLBACK(void *, size_t, size_t, void *);
   static size_t WRITE_CALLBACK(void *, size_t, size_t, void *);
   static size_t STREAM_CALLBACK(void *, size_t, size_t, void *);
 };

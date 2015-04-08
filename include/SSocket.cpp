@@ -31,6 +31,10 @@ size_t SSocket::STREAM_CALLBACK(void *contents, size_t size, size_t nmemb, void 
   //Return true from user function to exit stream prematurely
   return ((SSocket::STREAM_FUNC)(contents, size, nmemb)) ? 0 : size * nmemb;
 }
+size_t SSocket::FPUT_CALLBACK(void *contents, size_t size, size_t nmemb, void *outputFile) {
+  //Callback which appends data to a file
+  return fwrite(contents, size, nmemb, (FILE*) outputFile);
+}
 SSocket::SSocket() {
 //Construcrtor
   //Initialize our error code
@@ -90,6 +94,9 @@ bool SSocket::option(CURLoption option, size_t (*param)(void *, size_t, size_t, 
 
 void SSocket::debug(bool param) {
   this->option(CURLOPT_VERBOSE, (param ? 1L : 0L));
+}
+void SSocket::timeout(long time) {
+  this->option(CURLOPT_TIMEOUT, time);
 }
 
 ////
@@ -278,15 +285,35 @@ void SSocket::stream(const std::string & url, SSocket::Callback callback) {
   this->option(CURLOPT_WRITEFUNCTION, SSocket::WRITE_CALLBACK);
 
 }
-void SSocket::buffer(const std::string & url, std::string & buffer) {
+void SSocket::stream(const std::string & url, std::string & buffer) {
 //Setup our streaming callback, which will in turn call (*callback)
   //Set our curl callback to the write buffer
   this->option(CURLOPT_WRITEDATA, &buffer);
-  this->option(CURLOPT_WRITEFUNCTION, SSocket::WRITE_CALLBACK);
   
   //Launch the stream
   this->stream(url);
 
   //Reset our curl callback to the write buffer
   this->option(CURLOPT_WRITEDATA, &SSocket::READ_BUFFER);
+}
+void SSocket::stream(const std::string & url, const char * fileName, bool binary) {
+  FILE * file;
+  if (! (file = fopen(fileName, (binary ? "wb" : "w")))) {
+    printf("Could not open file; %s, for writing.\n", fileName);
+    return;
+  }
+
+  this->option(CURLOPT_WRITEFUNCTION, SSocket::FPUT_CALLBACK);
+  this->option(CURLOPT_HTTP_TRANSFER_DECODING, 0L);
+  this->option(CURLOPT_WRITEDATA, file);
+  
+  //Launch the stream
+  this->stream(url);
+
+  //Reset our curl callback
+  this->option(CURLOPT_HTTP_TRANSFER_DECODING, 1L);
+  this->option(CURLOPT_WRITEDATA, &SSocket::READ_BUFFER);
+  this->option(CURLOPT_WRITEFUNCTION, SSocket::WRITE_CALLBACK);
+
+  fclose(file);
 }
