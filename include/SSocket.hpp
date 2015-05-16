@@ -30,7 +30,7 @@ class SSocket {
   
 public:
   // Type of streaming callback function 
-  typedef bool (*Callback)(const void *, const unsigned, const unsigned);
+  typedef bool (*Callback)(void *, int, int);
 
   SSocket();
   ~SSocket();

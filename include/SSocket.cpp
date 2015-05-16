@@ -302,9 +302,10 @@ void SSocket::stream(const std::string & url, const char * fileName, bool binary
     printf("Could not open file; %s, for writing.\n", fileName);
     return;
   }
-
+  
+  if (binary)
+    this->option(CURLOPT_HTTP_TRANSFER_DECODING, 0L);
   this->option(CURLOPT_WRITEFUNCTION, SSocket::FPUT_CALLBACK);
-  this->option(CURLOPT_HTTP_TRANSFER_DECODING, 0L);
   this->option(CURLOPT_WRITEDATA, file);
   
   //Launch the stream
